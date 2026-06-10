@@ -19,6 +19,8 @@ namespace FormatHelper
             ApplyParagraphFormat(preset.Paragraph);
             ApplyTableFormat(preset.Table);
             ApplyImageFormat(preset.Image);
+            // ApplyNumberFormat is for standalone number paragraphs only;
+            // table numbers are handled inside ApplyTableFormat.
             ApplyNumberFormat(preset.Number);
         }
 
@@ -52,7 +54,7 @@ namespace FormatHelper
                     r.Font.Bold = fmt.Bold ? 1 : 0;
                     r.Font.Italic = fmt.Italic ? 1 : 0;
                     para.Format.LineSpacingRule = WdLineSpacing.wdLineSpaceMultiple;
-                    para.Format.LineSpacing = 12 * fmt.LineSpacing;
+                    para.Format.LineSpacing = fmt.LineSpacing;
                     para.Format.SpaceBefore = fmt.SpaceBefore;
                     para.Format.SpaceAfter = fmt.SpaceAfter;
                 }
@@ -142,6 +144,17 @@ namespace FormatHelper
             catch { }
         }
 
+        /// <summary>
+        /// Safely set cell text, preserving the end-of-cell marker.
+        /// </summary>
+        private static void SetCellText(Range cellRange, string text)
+        {
+            Range r = cellRange.Duplicate;
+            if (r.End > r.Start)
+                r.End = r.End - 1; // exclude end-of-cell marker
+            r.Text = text;
+        }
+
         public void ApplyTableFormat(TableFormat fmt)
         {
             foreach (Table tbl in _doc.Tables)
@@ -195,7 +208,11 @@ namespace FormatHelper
                             try
                             {
                                 Range cellRange = tbl.Cell(r, c).Range;
-                                string text = cellRange.Text.Trim();
+                                string text = cellRange.Text;
+                                // Remove end-of-cell marker (\r\a)
+                                if (text.Length >= 2)
+                                    text = text.Substring(0, text.Length - 2);
+                                text = text.Trim();
                                 double numVal;
                                 if (double.TryParse(text, out numVal))
                                 {
@@ -204,12 +221,12 @@ namespace FormatHelper
                                     if (fmt.UseThousandSeparator)
                                     {
                                         string formatted = numVal.ToString("N" + fmt.DecimalPlaces);
-                                        cellRange.Text = formatted;
+                                        SetCellText(cellRange, formatted);
                                     }
                                     else
                                     {
                                         string formatted = numVal.ToString("F" + fmt.DecimalPlaces);
-                                        cellRange.Text = formatted;
+                                        SetCellText(cellRange, formatted);
                                     }
                                     cellRange.ParagraphFormat.Alignment = (WdParagraphAlignment)fmt.NumberAlignment;
                                 }
@@ -266,7 +283,8 @@ namespace FormatHelper
                 try
                 {
                     Range r = para.Range;
-                    if ((int)r.get_Information(WdInformation.wdWithInTable) == 0) continue;
+                    // Only process standalone paragraphs (not in tables)
+                    if ((int)r.get_Information(WdInformation.wdWithInTable) != 0) continue;
                     string text = r.Text.Trim();
                     double numVal;
                     if (double.TryParse(text, out numVal))

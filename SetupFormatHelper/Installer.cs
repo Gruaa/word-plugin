@@ -57,7 +57,15 @@ namespace FormatHelperInstaller
                     {
                         foreach (Process p in wordProcs)
                         {
-                            try { p.Kill(); } catch { }
+                            try { p.CloseMainWindow(); } catch { }
+                        }
+                        // Wait for graceful close, then kill remaining
+                        if (!wordProcs[0].WaitForExit(5000))
+                        {
+                            foreach (Process p in wordProcs)
+                            {
+                                try { p.Kill(); } catch { }
+                            }
                         }
                         Thread.Sleep(1000);
                     }
@@ -186,7 +194,15 @@ namespace FormatHelperInstaller
                     {
                         foreach (Process p in wordProcs)
                         {
-                            try { p.Kill(); } catch { }
+                            try { p.CloseMainWindow(); } catch { }
+                        }
+                        // Wait for graceful close, then kill remaining
+                        if (!wordProcs[0].WaitForExit(5000))
+                        {
+                            foreach (Process p in wordProcs)
+                            {
+                                try { p.Kill(); } catch { }
+                            }
                         }
                         Thread.Sleep(1000);
                     }

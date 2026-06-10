@@ -11,7 +11,7 @@ namespace FormatHelper
     [ComVisible(true)]
     [Guid("A1B2C3D4-E5F6-7890-ABCD-EF1234567890")]
     [ProgId("VSTOFormatHelper.Addin")]
-    [ClassInterface(ClassInterfaceType.AutoDual)]
+    [ClassInterface(ClassInterfaceType.None)]
     public class AddInEntry : IDTExtensibility2, IRibbonExtensibility
     {
         private Microsoft.Office.Interop.Word.Application _wordApp;
