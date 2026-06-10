@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Xml.Serialization;
 
 namespace FormatHelper
 {
@@ -110,11 +112,57 @@ namespace FormatHelper
     {
         public static List<FormatPreset> Presets = new List<FormatPreset>();
 
+        private static string PresetsFilePath
+        {
+            get
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WordFormatHelper");
+                return Path.Combine(dir, "presets.xml");
+            }
+        }
+
         static PresetManager()
         {
-            Presets.Add(CreateStandardReport());
-            Presets.Add(CreateAuditReport());
-            Presets.Add(CreateCustomFormat());
+            if (!LoadPresets())
+            {
+                Presets.Add(CreateStandardReport());
+                Presets.Add(CreateAuditReport());
+                Presets.Add(CreateCustomFormat());
+            }
+        }
+
+        public static void SavePresets()
+        {
+            try
+            {
+                string path = PresetsFilePath;
+                string dir = Path.GetDirectoryName(path);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                using (FileStream fs = new FileStream(path, FileMode.Create))
+                {
+                    XmlSerializer ser = new XmlSerializer(typeof(List<FormatPreset>));
+                    ser.Serialize(fs, Presets);
+                }
+            }
+            catch { }
+        }
+
+        private static bool LoadPresets()
+        {
+            try
+            {
+                string path = PresetsFilePath;
+                if (!File.Exists(path)) return false;
+
+                using (FileStream fs = new FileStream(path, FileMode.Open))
+                {
+                    XmlSerializer ser = new XmlSerializer(typeof(List<FormatPreset>));
+                    Presets = (List<FormatPreset>)ser.Deserialize(fs);
+                    return Presets.Count > 0;
+                }
+            }
+            catch { return false; }
         }
 
         public static FormatPreset GetPresetByName(string name)

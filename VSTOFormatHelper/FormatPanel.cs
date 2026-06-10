@@ -7,6 +7,26 @@ namespace FormatHelper
 {
     public class FormatPanel : Form
     {
+        private static readonly string[] Align3Names = { "左对齐", "居中", "右对齐" };
+        private static readonly string[] Align4Names = { "左对齐", "居中", "右对齐", "两端对齐" };
+        private static readonly string[] BorderStyleNames = { "单线", "虚线", "点线", "点划线" };
+        private static readonly string[] AutoFitNames = { "根据内容", "根据窗口", "固定宽度" };
+
+        private static string SafeAlignName(string[] names, int idx)
+        {
+            return idx >= 0 && idx < names.Length ? names[idx] : names[0];
+        }
+
+        private static string SafeBorderStyle(int idx)
+        {
+            return idx >= 0 && idx < BorderStyleNames.Length ? BorderStyleNames[idx] : BorderStyleNames[0];
+        }
+
+        private static string SafeAutoFit(int idx)
+        {
+            return idx >= 0 && idx < AutoFitNames.Length ? AutoFitNames[idx] : AutoFitNames[0];
+        }
+
         private TabControl tabControl;
         private ComboBox presetCombo;
         private FormatPreset currentPreset;
@@ -76,8 +96,13 @@ namespace FormatHelper
         {
             ComboBox cb = new ComboBox();
             cb.DropDownStyle = ComboBoxStyle.DropDownList;
-            foreach (float s in sizes) cb.Items.Add(s.ToString());
-            cb.Items.Add(defaultVal.ToString());
+            bool hasDefault = false;
+            foreach (float s in sizes)
+            {
+                cb.Items.Add(s.ToString());
+                if (Math.Abs(s - defaultVal) < 0.01f) hasDefault = true;
+            }
+            if (!hasDefault) cb.Items.Add(defaultVal.ToString());
             cb.Text = defaultVal.ToString();
             cb.Width = 70;
             return cb;
@@ -380,7 +405,7 @@ namespace FormatHelper
             SelectComboByText(h4Size, p.Heading.Heading4Size.ToString());
             h4Bold.Checked = p.Heading.Heading4Bold;
 
-            SelectComboByText(paraAlignment, new string[] { "左对齐", "居中", "右对齐", "两端对齐" }[p.Paragraph.Alignment]);
+            SelectComboByText(paraAlignment, SafeAlignName(Align4Names, p.Paragraph.Alignment));
             SelectComboByText(paraFirstLineIndent, p.Paragraph.FirstLineIndent.ToString());
             SelectComboByText(paraLeftIndent, p.Paragraph.LeftIndent.ToString());
             SelectComboByText(paraRightIndent, p.Paragraph.RightIndent.ToString());
@@ -394,7 +419,7 @@ namespace FormatHelper
             LoadBorderUI(tblInsideHShow, tblInsideHStyle, tblInsideHWidth, p.Table.InsideHorizontalBorder);
             LoadBorderUI(tblInsideVShow, tblInsideVStyle, tblInsideVWidth, p.Table.InsideVerticalBorder);
 
-            SelectComboByText(tblAutoFit, new string[] { "根据内容", "根据窗口", "固定宽度" }[p.Table.AutoFit]);
+            SelectComboByText(tblAutoFit, SafeAutoFit(p.Table.AutoFit));
             SelectComboByText(tblFixedWidth, p.Table.FixedWidth.ToString());
             SelectComboByText(tblHeaderFont, p.Table.HeaderFont);
             SelectComboByText(tblHeaderSize, p.Table.HeaderFontSize.ToString());
@@ -405,24 +430,24 @@ namespace FormatHelper
             SelectComboByText(tblNumberSize, p.Table.NumberFontSize.ToString());
             tblUseThousandSep.Checked = p.Table.UseThousandSeparator;
             SelectComboByText(tblDecimalPlaces, p.Table.DecimalPlaces.ToString());
-            SelectComboByText(tblNumberAlignment, new string[] { "左对齐", "居中", "右对齐" }[p.Table.NumberAlignment]);
+            SelectComboByText(tblNumberAlignment, SafeAlignName(Align3Names, p.Table.NumberAlignment));
 
             SelectComboByText(imgMaxWidth, p.Image.MaxWidth.ToString());
             SelectComboByText(imgMaxHeight, p.Image.MaxHeight.ToString());
             imgKeepRatio.Checked = p.Image.KeepAspectRatio;
-            SelectComboByText(imgAlignment, new string[] { "左对齐", "居中", "右对齐" }[p.Image.Alignment]);
+            SelectComboByText(imgAlignment, SafeAlignName(Align3Names, p.Image.Alignment));
 
             SelectComboByText(numFont, p.Number.NumberFont);
             SelectComboByText(numSize, p.Number.NumberFontSize.ToString());
             numUseThousandSep.Checked = p.Number.UseThousandSeparator;
             SelectComboByText(numDecimalPlaces, p.Number.DecimalPlaces.ToString());
-            SelectComboByText(numAlignment, new string[] { "左对齐", "居中", "右对齐" }[p.Number.Alignment]);
+            SelectComboByText(numAlignment, SafeAlignName(Align3Names, p.Number.Alignment));
         }
 
         private void LoadBorderUI(CheckBox showCheck, ComboBox styleCombo, ComboBox widthCombo, BorderDef def)
         {
             showCheck.Checked = def.Show;
-            SelectComboByText(styleCombo, new string[] { "单线", "虚线", "点线", "点划线" }[def.Style]);
+            SelectComboByText(styleCombo, SafeBorderStyle(def.Style));
             SelectComboByText(widthCombo, def.Width.ToString());
         }
 
@@ -542,6 +567,7 @@ namespace FormatHelper
                 PresetManager.Presets.Add(p);
             }
             currentPreset = p;
+            PresetManager.SavePresets();
             MessageBox.Show("预设 \"" + p.Name + "\" 已保存", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
